@@ -1,77 +1,92 @@
 import random
-from math import gcd
+import math
 
 def is_prime(n):
+    if n < 2:
+        return False
     if n == 2:
         return True
-    if n % 2 == 0 | n == 0 | n == 1:
+    if n % 2 == 0:
         return False
-    i = 3
-    while i * i <= n:
-        if n % i == 0:
+    for i in range(3, n//2 + 1, 2):
+        if n % i == 0: # check for factors
             return False
-        i += 2
     return True
 
-def random_prime(limit):
+def random_prime(max_value):
     while True:
-        num = random.randint(2, limit)
+        num = random.randint(2, max_value)
         if is_prime(num):
             return num
 
-# Function to find the modular inverse of e
-def modular_inverse(e, phi):
-    # Extended Euclidean Algorithm to find the inverse
-    a, b, u = 0, phi, 1
-    while e > 0:
-        q = b // e
-        e, a, b, u = b % e, u, e, a - q * u
-    if b == 1:
-        return a % phi
+def mod_inverse(e, phi):
+    # find 'd' such that (d * e) % phi = 1
+    # rsa will find e given d
+    def extended_gcd(a, b):
+        # find gcd of a and b but where x, y are coefficients such that ax + by = gcd
+        if a == 0:
+            return b, 0, 1 # if a is 0, b is gcd
+        
+        gcd, x1, y1 = extended_gcd(b % a, a) # divide b by a and get the GCD of (b % a) and a
+        # use as coefficients for the sub problem
+        
+        # calculate coefficients for our current problem size
+        x = y1 - (b // a) * x1
+        y = x1
+        
+        return gcd, x, y
 
-# RSA encryption for a list of numbers
-def encrypt(message, n, e):
-    return [pow(ord(char), e, n) for char in message]
+    # get gcd and coefficients
+    gcd, x, _ = extended_gcd(e, phi)
+    
+    # mod inverse only exists if e and phi are coprime (their GCD is 1)
+    if gcd != 1:
+        raise ValueError("No modular inverse exists.")
+    
+    # find if mod inverse is in the range [0, phi-1]
+    return x % phi
 
-# RSA decryption for a list of numbers
-def decrypt(ciphertext, n, d):
-    return ''.join([chr(pow(char, d, n)) for char in ciphertext if pow(char, d, n) < 128])
-
-# Main function
 def main():
-    # Input message
-    message = input("Enter the message: ")
-
-    # Generate p and q
-    p = random_prime(10000)  # Adjust if performance issues occur
-    q = random_prime(10000)
-
-    # Calculate n and phi
+    M = input("Enter the message to encrypt: ")
+    
+    max_value = 1000000
+    p = random_prime(max_value)
+    q = random_prime(max_value)
+    while p == q:  # Ensure p and q are different
+        q = random_prime(max_value)
+    
     n = p * q
     phi = (p - 1) * (q - 1)
+    
+    e = 65537 # random exponent to use (prime)
+    while math.gcd(e, phi) != 1:
+        e = random.randrange(3, phi, 2)
+    
+    d = mod_inverse(e, phi)
 
-    # Choose e such that 1 < e < phi and gcd(e, phi) == 1
-    e = random.randint(2, phi - 1)
-    while gcd(e, phi) != 1:
-        e = random.randint(2, phi - 1)
-
-    # Calculate d
-    d = modular_inverse(e, phi)
-
-    # Encrypt the message
-    ciphertext = encrypt(message, n, e)
-    print(f"Ciphertext: {ciphertext}")
-
-    # Decrypt the message
-    decrypted_message = decrypt(ciphertext, n, d)
-    print(f"Decrypted Message: {decrypted_message}")
-
-    # Output values of p, q, e, and d
-    print(f"p: {p}, q: {q}, e: {e}, d: {d}")
-
-# Run RSA
-
-
+    print(f"p: {p}")
+    print(f"q: {q}")
+    print(f"e: {e}")
+    print(f"d: {d}")
+    
+    message_nums = [ord(char) for char in M]
+    
+    ciphertext = []
+    for m in message_nums:
+        # c = m^e mod n
+        c = pow(m, e, n)
+        ciphertext.append(c)
+    
+    print(f"\nCiphertext: {ciphertext}")
+    
+    decrypted_nums = []
+    for c in ciphertext:
+        # m = c^d mod n
+        m = pow(c, d, n)
+        decrypted_nums.append(m)
+    
+    decrypted = ''.join(chr(m) for m in decrypted_nums)
+    print(f"Decrypted message: {decrypted}")
 
 if __name__ == "__main__":
     main()
