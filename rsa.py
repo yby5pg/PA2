@@ -29,13 +29,13 @@ def modular_inverse(e, phi):
     if b == 1:
         return a % phi
 
-# RSA encryption
+# RSA encryption for a list of numbers
 def encrypt(message, n, e):
     return [pow(ord(char), e, n) for char in message]
 
-# RSA decryption
+# RSA decryption for a list of numbers
 def decrypt(ciphertext, n, d):
-    return ''.join([chr(pow(char, d, n)) for char in ciphertext])
+    return ''.join([chr(pow(char, d, n)) for char in ciphertext if pow(char, d, n) < 128])
 
 # Main function
 def main():
@@ -62,12 +62,15 @@ def main():
     ciphertext = encrypt(message, n, e)
     print(f"Ciphertext: {ciphertext}")
 
-    # Output values of p, q, e, and d
-    print(f"p: {p}, q: {q}, e: {e}, d: {d}")
-
     # Decrypt the message
     decrypted_message = decrypt(ciphertext, n, d)
     print(f"Decrypted Message: {decrypted_message}")
+
+    # Output values of p, q, e, and d
+    print(f"p: {p}, q: {q}, e: {e}, d: {d}")
+
+# Run RSA
+
 
 
 if __name__ == "__main__":
